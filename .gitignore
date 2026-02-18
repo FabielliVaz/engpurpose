@@ -1,0 +1,31 @@
+# 📦 Dependencies (Root e Subpastas)
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/node_modules/
+
+# 🔐 Environment & Secrets
+.env
+.env.local
+.env.*.local
+**/.env*
+
+# 🏗️ Build & Config
+dist/
+build/
+.vscode/
+.idea/
+*.tsbuildinfo
+
+# 🧪 QA & Automation (Sua especialidade!)
+coverage/
+
+
+# 🗄️ Database (SQLite/Drizzle)
+*.db
+*.sqlite
+migrations/
+
+# 💻 OS specific
+.DS_Store
+Thumbs.db
