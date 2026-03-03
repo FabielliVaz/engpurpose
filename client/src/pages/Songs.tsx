@@ -1,8 +1,8 @@
+import { mockedSongs } from '../mocks/songs';
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { songsService, Song } from '../services/api'
 
-// 1. Funções movidas para fora do componente para permitir o export e o teste unitário
 export const getDifficultyColor = (level: string) => {
   const l = (level || '').toUpperCase()
   if (l === 'A2') return 'bg-green-100 text-green-800'
@@ -24,23 +24,17 @@ export default function Songs() {
   const [error, setError] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
 
-  // 2. Removido o 'export' de dentro do useEffect
   useEffect(() => {
-    const fetchSongs = async () => {
-      try {
-        setIsLoading(true)
-        const data = await songsService.getAllSongs()
-        setSongs(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar músicas')
-      } finally {
-        setIsLoading(false)
-      }
+    setIsLoading(true)
+    try {
+      setSongs(mockedSongs as Song[])
+    } catch (err) {
+      setError('Erro ao carregar dados simulados')
+    } finally {
+      setIsLoading(false)
     }
-    fetchSongs()
-  }, [])
+  }, []);
 
-  // 3. Removido o 'export' de variáveis internas
   const filteredSongs = filterDifficulty === 'all'
     ? songs
     : songs.filter(song => (song.difficultyLevel || '').toUpperCase() === filterDifficulty.toUpperCase())
@@ -61,9 +55,8 @@ export default function Songs() {
               <button
                 key={level}
                 onClick={() => setFilterDifficulty(level)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  filterDifficulty === level ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition ${filterDifficulty === level ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
                 {level === 'all' ? 'Todas' : level === 'A2' ? 'Fácil (A2)' : level === 'B1' ? 'Intermediário (B1)' : 'Avançado (B2)'}
               </button>

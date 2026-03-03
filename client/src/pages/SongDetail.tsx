@@ -1,3 +1,4 @@
+import { mockedSongs } from '../mocks/songs'
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { songsService } from '../services/api'
@@ -15,17 +16,22 @@ export default function SongDetail() {
     const [showResults, setShowResults] = useState(false)
 
     useEffect(() => {
-        const fetchSong = async () => {
-            try {
-                const data = await songsService.getSongById(parseInt(id!))
-                setSong(data)
+        setIsLoading(true)
+        try {
+            const foundSong = mockedSongs.find(s => s.id === Number(id))
+
+            if (foundSong) {
+                setSong(foundSong)
                 setQuizzes([
                     { question: 'What is the main theme of this song?', options: ['Love', 'Adventure', 'Friendship'], correctAnswer: 'Love' },
-                    { question: 'Which word appears in the title?', options: ['Flowers', 'Trees', 'Sun'], correctAnswer: 'Flowers' }
+                    { question: 'Which word appears in the title?', options: [foundSong.title, 'Trees', 'Sun'], correctAnswer: foundSong.title }
                 ])
-            } catch (err) { console.error(err) } finally { setIsLoading(false) }
+            }
+        } catch (err) {
+            console.error("Erro ao carregar mock:", err)
+        } finally {
+            setIsLoading(false)
         }
-        fetchSong()
     }, [id])
 
     useEffect(() => {
@@ -80,21 +86,19 @@ export default function SongDetail() {
                             <p className="text-slate-400 dark:text-slate-500 mt-2 font-medium">💡 Clique na frase para ver a tradução</p>
                         </div>
                         <button onClick={() => setShowQuiz(true)} className="bg-amber-400 hover:bg-amber-500 text-black font-black py-4 px-10 rounded-2xl shadow-xl transition-all active:scale-95">
-                            🎯 TREINAR COM QUIZ
+                            🔍 QUIZZ
                         </button>
                     </div>
 
                     <div className="space-y-4">
                         {song?.lyrics?.split('\n').map((line: string, index: number) => {
-                            const translation = song.translation?.split('\n')[index]
-                            const isOpen = activeLine === index
+                            const translation = song.translation?.split('\n')[index] || "Tradução não disponível para esta linha"                            const isOpen = activeLine === index
                             return (
                                 <article key={index} onClick={() => setActiveLine(isOpen ? null : index)}
-                                    className={`p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                                        isOpen 
-                                        ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800' 
+                                    className={`p-6 rounded-2xl border-2 transition-all cursor-pointer ${isOpen
+                                        ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800'
                                         : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900'
-                                    }`}>
+                                        }`}>
                                     <p className={`text-xl leading-relaxed ${isOpen ? 'text-indigo-900 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>{line}</p>
                                     {isOpen && translation && (
                                         <div className="mt-4 pt-4 border-t border-indigo-100 dark:border-indigo-800/50">
@@ -124,11 +128,10 @@ export default function SongDetail() {
                                     <div className="grid gap-3">
                                         {quizzes[currentQuizIndex].options.map((option: string) => (
                                             <button key={option} onClick={() => setSelectedAnswer(option)}
-                                                className={`flex items-center p-5 border-2 rounded-2xl font-bold transition-all text-left ${
-                                                    selectedAnswer === option 
-                                                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/20' 
+                                                className={`flex items-center p-5 border-2 rounded-2xl font-bold transition-all text-left ${selectedAnswer === option
+                                                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/20'
                                                     : 'border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                                }`}>
+                                                    }`}>
                                                 <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${selectedAnswer === option ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
                                                     {selectedAnswer === option && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                                                 </div>
@@ -152,7 +155,7 @@ export default function SongDetail() {
                                 <div className="bg-indigo-50 dark:bg-indigo-950/40 rounded-3xl p-10 mb-10 inline-block px-16">
                                     <p className="text-7xl font-black text-indigo-600 dark:text-indigo-400">{quizScore}/{quizzes.length}</p>
                                 </div>
-                                <button onClick={() => { setShowQuiz(false); setShowResults(false); setCurrentQuizIndex(0); setQuizScore(0); }} 
+                                <button onClick={() => { setShowQuiz(false); setShowResults(false); setCurrentQuizIndex(0); setQuizScore(0); }}
                                     className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-indigo-700 transition-colors"
                                 >
                                     VOLTAR PARA A MÚSICA
