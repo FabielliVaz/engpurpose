@@ -10,7 +10,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 
 
 dotenv.config()
-const app = express() 
+const app = express()
 const PORT = process.env.PORT || 3000
 
 const options = {
@@ -90,10 +90,26 @@ const options = {
 
 const specs = swaggerJsdoc(options);
 
+app.get('/api-docs-json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(specs);
+});
+
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    explorer: true,
+    swaggerOptions: {
+      url: '/api-docs-json',
+    }
+  })
+);
+
 app.use(cors())
 app.use(express.json())
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Servidor rodando!' })
@@ -121,7 +137,7 @@ async function start() {
   try {
     await initializeDatabase()
     console.log('✅ Banco de dados conectado!')
-    
+
     app.listen(PORT, () => {
       console.log(`✅ Servidor rodando em http://localhost:${PORT}`)
       console.log(`📝 Ambiente: ${process.env.NODE_ENV}`)
