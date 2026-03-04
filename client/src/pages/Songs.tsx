@@ -1,7 +1,7 @@
 import { mockedSongs } from '../mocks/songs';
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { songsService, Song } from '../services/api'
+import { Song } from '../services/api'
 
 export const getDifficultyColor = (level: string) => {
   const l = (level || '').toUpperCase()

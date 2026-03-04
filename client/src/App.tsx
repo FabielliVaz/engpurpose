@@ -2,11 +2,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SessionWarning } from './components/SessionWarning'
 import { SessionDebug } from './components/SessionDebug'
-import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Songs from './pages/Songs'
 import SongDetail from './pages/SongDetail'
+import QuickAccess from './pages/QuickAcess'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -24,7 +24,7 @@ function AppRoutes() {
       <SessionWarning />
       <SessionDebug />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<QuickAccess />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route
