@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { mockedSongs } from '../mocks/songs'
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
 
 export default function SongDetail() {
     const { id } = useParams<{ id: string }>()
@@ -93,8 +93,8 @@ export default function SongDetail() {
                             return (
                                 <article key={index} onClick={() => setActiveLine(isOpen ? null : index)}
                                     className={`p-6 rounded-2xl border-2 transition-all cursor-pointer ${isOpen
-                                        ? 'bg-indigo-50 border-indigo-200'
-                                        : 'bg-white border-slate-50 hover:border-indigo-100'
+                                        ? 'bg-indigo-50 border-indigo-400'
+                                        : 'bg-white border-[#5143eb] hover:shadow-lg'
                                         }`}>
                                     <p className={`text-xl leading-relaxed ${isOpen ? 'text-indigo-900 font-bold' : 'text-slate-700'}`}>{line}</p>
                                     {isOpen && (

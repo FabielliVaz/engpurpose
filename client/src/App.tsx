@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Songs from './pages/Songs'
 import SongDetail from './pages/SongDetail'
-import QuickAccess from './pages/QuickAcess'
+import QuickAccess from './pages/QuickAccess'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -38,9 +38,9 @@ function AppRoutes() {
         <Route
           path="/songs/:id"
           element={
-            <PrivateRoute>
+            //<PrivateRoute>
               <SongDetail />
-            </PrivateRoute>
+            //</PrivateRoute>
           }
         />
       </Routes>
