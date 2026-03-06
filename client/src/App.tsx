@@ -1,12 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './hooks/useAuth'
-import { SessionWarning } from './components/SessionWarning'
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import { SessionDebug } from './components/SessionDebug'
+import { SessionWarning } from './components/SessionWarning'
+import { AuthProvider } from './hooks/useAuth'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
-import Songs from './pages/Songs'
-import SongDetail from './pages/SongDetail'
 import QuickAccess from './pages/QuickAccess'
+import Signup from './pages/Signup'
+import SongDetail from './pages/SongDetail'
+import Songs from './pages/Songs'
 
 function AppRoutes() {
   return (
