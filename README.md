@@ -1,21 +1,37 @@
-# 🎵 EngPurpose
+# 🎵 EngPurpose - Learn English with Music!
 
-**Aprenda inglês com propósito através da música.**
-
-O **EngPurpose** é uma plataforma Full Stack desenvolvida para auxiliar estudantes de inglês (foco nos níveis A2-B1) a praticarem o idioma de forma engajadora. O projeto utiliza a música como ferramenta de memorização e oferece recursos de filtragem por nível de dificuldade.
+**Aprenda inglês com propósito através da música!**
 
 ---
 
-## 🛠️ Stack Técnica
-
-- **Frontend**: React (Vite), TypeScript, Tailwind CSS, React Router DOM, Fetch API.
-- **Backend**: Node.js, Express, TypeScript, Drizzle ORM.
-- **Banco de Dados**: MySQL.
-- **Qualidade/Testes**: Vitest, Coverage (v8).
+## 📌 Índice
+1. [Conceito](#-conceito)
+2. [Setup](#-setup)
+3. [Arquitetura](#-arquitetura)
 
 ---
 
-## 📥 Setup do Projeto
+## Conceito
+O EngPurpose é uma plataforma Full Stack desenvolvida para auxiliar estudantes de inglês (com foco nos níveis A2–B1) a praticarem o idioma de forma mais engajadora. Através da plataforma, é possível:
+
+🎵 filtrar músicas por nível de inglês <br/>
+📚 estudar o vocabulário presente nas letras <br/>
+🎧 praticar listening e compreensão <br/>
+🕹️ aprender em um ambiente gamificado <br/>
+
+### 🚀 Demo
+Acesse a aplicação:
+[EngPurpose
+](https://engpurpose.vercel.app/)
+
+## 📥 Setup
+
+#### 🛠️ Tech Stack 
+- **Linguagem**: TypeScript
+- **Frontend**: React (Vite), Tailwind CSS, Vitest.
+- **Backend**: Node.js, Express, Drizzle ORM.
+- **Documentação**: Swagger UI / OpenAPI 3.0.
+- **Banco de Dados**: MySQL
 
 ### 1. Requisitos
 - Node.js instalado (v18+)
@@ -43,3 +59,19 @@ cd client
 pnpm test
 # Coverage: pnpm test --coverage
 ```
+
+## 🏗️ Arquitetura
+
+### client/
+Interface do usuário desenvolvida em React.
+
+### server/
+API REST responsável por:
+
+- autenticação
+- gerenciamento de músicas
+- vocabulário
+- progresso do usuário
+
+### database/
+Persistência de dados usando MySQL e Drizzle ORM.
