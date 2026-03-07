@@ -13,6 +13,7 @@
   }
 
   body {
+    background-color: #f5f3ff !important;
     @apply m-0 transition-colors duration-300 antialiased;
     font-family: sans-serif;
   }

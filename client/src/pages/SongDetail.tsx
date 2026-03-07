@@ -46,13 +46,13 @@ export default function SongDetail() {
     }
 
     if (isLoading) return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#f5f3ff]">
             <p className="text-xl font-bold text-indigo-600 animate-pulse">Carregando...</p>
         </div>
     )
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="min-h-screen bg-transparent flex flex-col">
             <header className="bg-indigo-600 pt-16 pb-14 px-10 text-white shadow-md relative z-10">
                 <div className="max-w-5xl mx-auto px-6">
                     <Link to="/songs" className="text-indigo-200 hover:text-white mb-6 inline-flex items-center gap-2 font-medium transition">

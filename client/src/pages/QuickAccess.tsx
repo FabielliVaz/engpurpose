@@ -4,7 +4,7 @@ export default function QuickAccess() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#f5f3ff] flex items-center justify-center p-6 text-center">
       <div className="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
         <div className="text-6xl mb-6">🗽🎶</div>
         <h1 className="text-3xl font-black text-slate-800 mb-4">Bem-vindo(a) ao EngPurpose!</h1>

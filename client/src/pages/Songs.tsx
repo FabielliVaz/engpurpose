@@ -40,7 +40,7 @@ export default function Songs() {
     : songs.filter(song => (song.difficultyLevel || '').toUpperCase() === filterDifficulty.toUpperCase())
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 transition-none">
+    <div className="min-h-screen bg-[#f5f3ff] p-8 transition-none">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Biblioteca de Músicas</h1>
