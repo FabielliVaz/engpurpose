@@ -22,11 +22,9 @@ coverage/
 .nyc_output
 
 
-# 🗄️ Database (Drizzle & SQLite)
+# 🗄️ Database (Drizzle/MySQL)
 *.db
 *.db-journal
-*.sqlite
-*.sqlite-journal
 migrations/
 
 

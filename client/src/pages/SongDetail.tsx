@@ -1,10 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { mockedSongs } from '../mocks/songs'
+import { shuffle } from '../utils'
+
+interface Song {
+    id: number;
+    title: string;
+    artist: string;
+    theme?: string;
+    emotion?: string;
+    genre?: string;
+    lyrics: string;
+    translation?: string;
+    youtube_url?: string;
+    youtubeUrl?: string;
+    difficultyLevel?: string;
+    duration?: number;
+}
 
 export default function SongDetail() {
     const { id } = useParams<{ id: string }>()
-    const [song, setSong] = useState<any>(null)
+    const [song, setSong] = useState<Song | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [activeLine, setActiveLine] = useState<number | null>(null)
     const [quizzes, setQuizzes] = useState<any[]>([])
@@ -15,22 +31,69 @@ export default function SongDetail() {
     const [showResults, setShowResults] = useState(false)
 
     useEffect(() => {
-        setIsLoading(true)
-        try {
-            const foundSong = mockedSongs.find(s => s.id === Number(id))
-            if (foundSong) {
-                setSong(foundSong)
-                setQuizzes([
-                    { question: 'What is the main theme of this song?', options: ['Love', 'Adventure', 'Friendship'], correctAnswer: 'Love' },
-                    { question: 'Which word appears in the title?', options: [foundSong.title, 'Trees', 'Sun'], correctAnswer: foundSong.title }
-                ])
+        const loadData = async () => {
+            setIsLoading(true);
+            const USE_API = import.meta.env.VITE_USE_API === 'true';
+            let foundSong: Song | null = null;
+
+            try {
+                if (USE_API) {
+                    const response = await fetch(`http://localhost:3000/api/songs/${id}`);
+                    if (response.ok) {
+                        foundSong = await response.json();
+                    }
+                }
+
+                if (!foundSong) {
+                    foundSong = mockedSongs.find(s => s.id === Number(id)) || null;
+                }
+
+                if (foundSong && foundSong.lyrics) {
+                    setSong(foundSong);
+                    // Generate quiz for the last question dynamically
+                    const possibleWords = ['Love', 'Dance', 'Sky', 'Run', 'Fly'];
+                    const wordsNotInLyrics = possibleWords.filter(word => !foundSong!.lyrics.toLowerCase().includes(word.toLowerCase()));
+                    const correctWord = wordsNotInLyrics.length > 0 ? wordsNotInLyrics[Math.floor(Math.random() * wordsNotInLyrics.length)] : 'Love';
+                    const otherOptions = possibleWords.filter(word => word !== correctWord).slice(0, 2);
+                    setQuizzes([
+                        {
+                            question: 'What is the main theme of this song?',
+                            options: shuffle([foundSong.theme || 'Love', 'Adventure', 'Friendship']),
+                            correctAnswer: foundSong.theme || 'Love'
+                        },
+                        {
+                            question: 'Which word appears in the title?',
+                            options: shuffle([foundSong.title, 'Trees', 'Sun']),
+                            correctAnswer: foundSong.title
+                        },
+                        {
+                            question: 'What emotion does the song primarily convey?',
+                            options: shuffle([foundSong.emotion || 'Joy', 'Sadness', 'Excitement']),
+                            correctAnswer: foundSong.emotion || 'Joy'
+                        },
+                        {
+                            question: 'What is the genre of this song?',
+                            options: shuffle([foundSong.genre || 'Pop', 'Rock', 'Pop']),
+                            correctAnswer: foundSong.genre || 'Pop'
+                        },
+                        {
+                            question: 'Which of these words is NOT in the lyrics?',
+                            options: shuffle([correctWord, ...otherOptions]),
+                            correctAnswer: correctWord
+                        }
+                    ]);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar dados:", err);
+            } finally {
+                setIsLoading(false);
             }
-        } catch (err) {
-            console.error("Erro ao carregar mock:", err)
-        } finally {
-            setIsLoading(false)
-        }
-    }, [id])
+        };
+
+        loadData();
+    }, [id]);
+
+    const youtubeUrl = song?.youtube_url || song?.youtubeUrl;
 
     useEffect(() => {
         document.body.style.overflow = showQuiz ? 'hidden' : 'unset';
@@ -69,8 +132,7 @@ export default function SongDetail() {
                     <div className="relative bg-black rounded-[2rem] overflow-hidden shadow-2xl ring-8 ring-white aspect-video w-full">
                         <iframe
                             width="100%" height="100%"
-                            src={song?.youtubeUrl?.replace('watch?v=', 'embed/')}
-                            title="Player" allowFullScreen className="w-full h-full border-none"
+                            src={youtubeUrl?.replace('watch?v=', 'embed/')} title="Player" allowFullScreen className="w-full h-full border-none"
                         ></iframe>
                     </div>
                 </section>
@@ -81,9 +143,14 @@ export default function SongDetail() {
                             <h2 className="text-3xl font-black text-slate-800 tracking-tight">Letra e Tradução</h2>
                             <p className="text-slate-400 mt-2 font-medium">💡 Clique na frase para ver a tradução</p>
                         </div>
-                        <button onClick={() => setShowQuiz(true)} className="bg-amber-400 hover:bg-amber-500 text-black font-black py-4 px-10 rounded-2xl shadow-xl transition-all active:scale-95">
-                            🔍 QUIZZ
-                        </button>
+                        <div className="flex gap-4">
+                            <Link to="/tutor-ia" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-8 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2">
+                                <span>🤖</span> TUTOR IA
+                            </Link>
+                            <button onClick={() => setShowQuiz(true)} className="bg-amber-400 hover:bg-amber-500 text-black font-black py-4 px-10 rounded-2xl shadow-xl transition-all active:scale-95">
+                                🔍 QUIZZ
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-4">

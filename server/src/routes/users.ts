@@ -1,4 +1,3 @@
-//import { Router } from 'express'
 import express, { Router } from 'express';
 import { eq } from 'drizzle-orm'
 import * as bcryptjs from 'bcryptjs'
@@ -6,8 +5,41 @@ import jwt from 'jsonwebtoken'
 import { getDatabase } from '../db/config'
 import { users } from '../db/schema.js'
 
-const router:  Router = Router()
+const router: Router = Router()
 
+/**
+ * @swagger
+ * /api/users/signup:
+ *   post:
+ *     summary: Cadastra um novo usuário
+ *     description: Cria um novo perfil no sistema com senha criptografada.
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Fabi QA
+ *               email:
+ *                 type: string
+ *                 example: fabi@example.com
+ *               password:
+ *                 type: string
+ *                 example: senha123
+ *     responses:
+ *       201:
+ *         description: Usuário criado com sucesso.
+ *       400:
+ *         description: Email já cadastrado ou dados inválidos.
+ */
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body
@@ -25,35 +57,54 @@ router.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcryptjs.hash(password, 10)
 
-    console.log('Tentando inserir usuário com email:', email)
     const result = await db.insert(users).values({
       name,
       email,
       password: hashedPassword,
     })
-    console.log('Resultado do insert:', result)
 
     const newUserList = await db.select({ id: users.id }).from(users).where(eq(users.email, email))
     const userId = newUserList[0]?.id
-    console.log('Usuário criado com ID:', userId)
 
     return res.status(201).json({ 
       message: 'Usuário criado com sucesso!',
       userId 
     })
   } catch (error) {
-    console.error('Erro detalhado ao criar usuário:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      error
-    })
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
-    })
+    console.error('Erro ao criar usuário:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
 
+/**
+ * @swagger
+ * /api/users/login:
+ *   post:
+ *     summary: Realiza login do usuário
+ *     description: Autentica o usuário e retorna um token JWT válido por 15 minutos.
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: fabi@example.com
+ *               password:
+ *                 type: string
+ *                 example: senha123
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso.
+ *       401:
+ *         description: Email ou senha inválidos.
+ */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
@@ -98,6 +149,17 @@ router.post('/login', async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/users:
+ *    get:
+ *      summary: Lista todos os usuários
+ *      description: Retorna IDs, nomes e emails de todos os usuários cadastrados.
+ *      tags: [Users]
+ *    responses:
+ *      200:
+ *        description: Lista de usuários recuperada com sucesso.
+ */
 router.get('/', async (req, res) => {
   try {
     const db = await getDatabase()
@@ -115,6 +177,25 @@ router.get('/', async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Obtém dados de um usuário específico
+ *     description: Retorna informações públicas de um usuário através do seu ID.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Usuário encontrado com sucesso.
+ *       404:
+ *         description: Usuário não encontrado.
+ */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params

@@ -25,14 +25,29 @@ export default function Songs() {
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
 
   useEffect(() => {
-    setIsLoading(true)
-    try {
-      setSongs(mockedSongs as Song[])
-    } catch (err) {
-      setError('Erro ao carregar dados simulados')
-    } finally {
-      setIsLoading(false)
-    }
+    const loadSongs = async () => {
+      setIsLoading(true);
+      const USE_API = import.meta.env.VITE_USE_API === 'true';
+
+      if (USE_API) {
+        try {
+          const response = await fetch('http://localhost:3000/api/songs');
+          if (response.ok) {
+            const data = await response.json();
+            setSongs(data);
+            setIsLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Erro ao buscar músicas da API, usando Mocks");
+        }
+      }
+
+      setSongs(mockedSongs as Song[]);
+      setIsLoading(false);
+    };
+
+    loadSongs();
   }, []);
 
   const filteredSongs = filterDifficulty === 'all'

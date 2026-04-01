@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { formatDuration, getDifficultyColor } from '../../pages/Songs'
+import { mockedSongs } from '../../mocks/songs'
 
 describe('Songs Page Logic', () => {
-  
+
   describe('formatDuration()', () => {
     it('deve formatar 269 segundos corretamente (Yellow)', () => {
       expect(formatDuration(269)).toBe('4:29')
@@ -32,5 +33,25 @@ describe('Songs Page Logic', () => {
     it('deve ser insensível a maiúsculas/minúsculas (case-insensitive)', () => {
       expect(getDifficultyColor('b2')).toBe('bg-red-100 text-red-800')
     })
+  })
+})
+
+describe('Mocked Songs', () => {
+  it('should have songs with required properties', () => {
+    expect(mockedSongs).toBeInstanceOf(Array)
+    expect(mockedSongs.length).toBeGreaterThan(0)
+
+    mockedSongs.forEach(song => {
+      expect(song).toHaveProperty('id')
+      expect(song).toHaveProperty('title')
+      expect(song).toHaveProperty('artist')
+      expect(song).toHaveProperty('lyrics')
+    })
+  })
+
+  it('should find a song by id', () => {
+    const song = mockedSongs.find(s => s.id === 4)
+    expect(song).toBeDefined()
+    expect(song?.title).toBe('Yellow')
   })
 })

@@ -21,9 +21,8 @@ build/
 coverage/
 
 
-# 🗄️ Database (SQLite/Drizzle)
+# 🗄️ Database (Drizzle/MySQL)
 *.db
-*.sqlite
 migrations/
 
 # 💻 OS specific
