@@ -7,6 +7,7 @@ import {
   boolean,
   decimal,
   datetime,
+  date,
   json,
   mysqlEnum,
   serial,
@@ -75,4 +76,13 @@ export const favorites = mysqlTable('favorites', {
   userId: int('user_id').notNull(),
   songId: int('song_id').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+})
+
+export const aiUsage = mysqlTable('ai_usage', {
+  id: serial('id').primaryKey(),
+  userId: int('user_id').notNull(),
+  usageDate: date('usage_date').notNull(),
+  requestCount: int('request_count').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 })

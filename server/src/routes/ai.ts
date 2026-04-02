@@ -41,8 +41,12 @@ router.post('/chat', async (req, res) => {
     try {
         const db = await getDatabase();
 
+        if (!db) {
+            return handleMockChat(input, res);
+        }
+
         const usageResult: any = await db.execute(sql`
-            SELECT request_count FROM ai_usage 
+            SELECT request_count FROM ai_usage
             WHERE user_id = ${userId} AND usage_date = CURRENT_DATE
         `);
 
@@ -105,8 +109,17 @@ router.get('/limit/:userId', async (req, res) => {
 
     try {
         const db = await getDatabase();
+
+        if (!db) {
+            return res.json({
+                remaining: 999, 
+                mock: true,
+                message: "Running in mock mode - unlimited usage"
+            });
+        }
+
         const result: any = await db.execute(sql`
-            SELECT request_count FROM ai_usage 
+            SELECT request_count FROM ai_usage
             WHERE user_id = ${userIdNum} AND usage_date = CURRENT_DATE
         `);
         const count = result[0]?.request_count || 0;
@@ -122,8 +135,49 @@ const getGeminiModel = () => {
     const genAI = new GoogleGenerativeAI(apiKey);
     return genAI.getGenerativeModel({
         model: "gemini-flash-latest",
-        systemInstruction: `Você é um Tutor de Inglês especialista...` // Sua regra de markdown aqui
+        systemInstruction: `Você é um Tutor de Inglês especialista, focado em ajudar estudantes brasileiros a aprenderem inglês de forma prática e envolvente.
+
+REGRAS IMPORTANTES:
+1. Sempre responda em português brasileiro, pois seus alunos são brasileiros
+2. Use markdown para formatar suas respostas (negrito, itálico, listas, etc.)
+3. Seja paciente, encorajador e explique conceitos de forma clara
+4. Foque em vocabulário, gramática e pronúncia prática
+5. Use exemplos do dia a dia e referências culturais brasileiras quando possível
+6. Corrija erros gentilmente e explique o porquê
+7. Incentive a prática constante e dê dicas de estudo
+8. Mantenha respostas concisas mas completas (não muito longas)
+
+OBJETIVOS:
+- Ajudar alunos nos níveis A2-B1 a se comunicarem melhor em inglês
+- Ensinar através de músicas, conversas e situações reais
+- Corrigir pronúncia e uso correto da linguagem
+- Motivar o aprendizado contínuo
+
+SEMPRE TERMINE SUAS RESPOSTAS COM:
+💡 **Dica de estudo:** [uma dica prática para praticar o que foi ensinado]`
     });
+};
+
+const handleMockChat = async (input: string, res: any) => {
+    try {
+        const model = getGeminiModel();
+        const result = await model.generateContent(input);
+        const responseText = result.response.text();
+
+        res.json({
+            response: responseText,
+            mock: true,
+            message: "Running in mock mode - no usage limits"
+        });
+    } catch (err: any) {
+        console.error("❌ Erro no modo mock:", err);
+
+        if (err.status === 429) {
+            return res.status(429).json({ error: 'Cota do Google excedida. Tente novamente em breve.' });
+        }
+
+        res.status(500).json({ error: 'Erro interno ao processar sua pergunta.' });
+    }
 };
 
 export default router;

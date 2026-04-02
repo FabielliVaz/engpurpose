@@ -1,6 +1,6 @@
+import dotenv from 'dotenv'
 import { drizzle } from 'drizzle-orm/mysql2/driver'
 import mysql from 'mysql2/promise'
-import dotenv from 'dotenv'
 
 dotenv.config()
 
@@ -25,8 +25,13 @@ export async function initializeDatabase() {
 }
 
 export async function getDatabase() {
-  if (!db) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.')
+  if (db) return db;
+
+  try {
+    await initializeDatabase();
+    return db;
+  } catch (error) {
+    console.warn('Database not available, running in mock mode:', error instanceof Error ? error.message : String(error));
+    return null; 
   }
-  return db
 }

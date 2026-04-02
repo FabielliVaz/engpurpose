@@ -1,7 +1,6 @@
-import { mockedSongs } from '../mocks/songs';
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Song } from '../services/api'
+import { songsService, Song } from '../services/api'
 
 export const getDifficultyColor = (level: string) => {
   const l = (level || '').toUpperCase()
@@ -21,34 +20,25 @@ export const formatDuration = (seconds?: number | null) => {
 export default function Songs() {
   const [songs, setSongs] = useState<Song[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
 
   useEffect(() => {
     const loadSongs = async () => {
-      setIsLoading(true);
-      const USE_API = import.meta.env.VITE_USE_API === 'true';
+      setIsLoading(true)
 
-      if (USE_API) {
-        try {
-          const response = await fetch('http://localhost:3000/api/songs');
-          if (response.ok) {
-            const data = await response.json();
-            setSongs(data);
-            setIsLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn("Erro ao buscar músicas da API, usando Mocks");
-        }
+      try {
+        const data = await songsService.getAllSongs()
+        setSongs(data)
+      } catch (err) {
+        console.warn('Erro ao buscar músicas:', err)
+        setSongs([])
+      } finally {
+        setIsLoading(false)
       }
+    }
 
-      setSongs(mockedSongs as Song[]);
-      setIsLoading(false);
-    };
-
-    loadSongs();
-  }, []);
+    loadSongs()
+  }, [])
 
   const filteredSongs = filterDifficulty === 'all'
     ? songs
@@ -62,7 +52,6 @@ export default function Songs() {
           <p className="text-gray-600">Aprenda inglês através das melhores músicas para o seu PDI</p>
         </div>
 
-        {/* Filtros */}
         <div className="mb-8 bg-white rounded-lg shadow p-4 border border-gray-100">
           <label className="block text-sm font-medium text-gray-700 mb-2">Filtrar por nível:</label>
           <div className="flex gap-2 flex-wrap">
@@ -70,8 +59,7 @@ export default function Songs() {
               <button
                 key={level}
                 onClick={() => setFilterDifficulty(level)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${filterDifficulty === level ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                className={`px-4 py-2 rounded-lg font-medium transition ${filterDifficulty === level ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
               >
                 {level === 'all' ? 'Todas' : level === 'A2' ? 'Fácil (A2)' : level === 'B1' ? 'Intermediário (B1)' : 'Avançado (B2)'}
               </button>
@@ -79,11 +67,10 @@ export default function Songs() {
           </div>
         </div>
 
-        {/* Listagem */}
         {isLoading ? (
-          <div className="text-center py-12"><p className="text-gray-600 animate-pulse">Carregando músicas...</p></div>
-        ) : error ? (
-          <div className="bg-red-50 p-4 rounded text-red-700 border border-red-200">{error}</div>
+          <div className="text-center py-12">
+            <p className="text-gray-600 animate-pulse">Carregando músicas...</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSongs.map(song => (
@@ -92,10 +79,10 @@ export default function Songs() {
                 <p className="text-gray-600 mb-4 text-sm">por {song.artist}</p>
                 <div className="flex items-center justify-between">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getDifficultyColor(song.difficultyLevel)}`}>
-                    {song.difficultyLevel === 'A2' ? '🟢 Fácil' : song.difficultyLevel === 'B1' ? '🟡 Intermediário' : '🔴 Avançado'}
+                    {song.difficultyLevel === 'A2' ? 'Fácil' : song.difficultyLevel === 'B1' ? 'Intermediário' : 'Avançado'}
                   </span>
                   <span className="text-gray-500 text-sm flex items-center gap-1 font-medium">
-                    ⏱️ {formatDuration(song.duration)}
+                    {formatDuration(song.duration)}
                   </span>
                 </div>
               </Link>
