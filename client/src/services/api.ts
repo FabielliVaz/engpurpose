@@ -43,6 +43,13 @@ export interface Song {
   updatedAt: string
 }
 
+export interface AiChatResponse {
+  response: string
+  fallback?: boolean
+  providerStatus?: 'ok' | 'rate_limit' | 'unavailable' | 'missing_key'
+  message?: string
+}
+
 const readMockUsers = (): MockAuthUser[] => {
   if (typeof window === 'undefined') return []
 
@@ -315,7 +322,7 @@ export const aiService = {
     return response.json()
   },
 
-  chat: async (input: string, userId: number) => {
+  chat: async (input: string, userId: number): Promise<AiChatResponse> => {
     const response = await fetch(`${API_BASE_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

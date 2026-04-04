@@ -14,6 +14,118 @@ REGRAS IMPORTANTES:
 SEMPRE TERMINE SUAS RESPOSTAS COM:
 💡 **Dica de estudo:** [uma dica prática para praticar o que foi ensinado]`
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+const buildFallbackResponse = (input: string, reason: 'rate_limit' | 'unavailable' | 'missing_key') => {
+  const normalized = input.trim()
+  const lower = normalized.toLowerCase()
+
+  const introByReason = {
+    rate_limit: 'O tutor avançado está temporariamente sobrecarregado, então respondi com o modo de contingência.',
+    unavailable: 'O provedor de IA está indisponível no momento, então respondi com o modo de contingência.',
+    missing_key: 'A integração externa não está configurada neste ambiente, então respondi com o modo de contingência.',
+  }
+
+  let explanation = `Você perguntou: **${normalized}**\n\n`
+
+  if (lower.includes('difference between') || lower.includes('diferença') || lower.includes('qual a diferença')) {
+    explanation += [
+      'Para comparar duas palavras ou estruturas em inglês, use este roteiro:',
+      '1. Veja o significado principal de cada uma.',
+      '2. Observe o contexto em que cada opção aparece.',
+      '3. Monte uma frase curta com cada termo.',
+      '4. Compare o tom: formal, informal, frequente ou específico.',
+      '',
+      '**Exemplo de estudo:**',
+      '- Palavra A: use quando quiser falar de sentido mais geral.',
+      '- Palavra B: use quando quiser um contexto mais específico.',
+    ].join('\n')
+  } else if (lower.includes('pronunciation') || lower.includes('pronúncia') || lower.includes('how do i say')) {
+    explanation += [
+      'Para praticar pronúncia em inglês:',
+      '1. Separe a palavra em partes.',
+      '2. Descubra qual sílaba recebe mais força.',
+      '3. Fale devagar primeiro, depois em velocidade normal.',
+      '4. Grave sua voz e compare com uma referência.',
+      '',
+      '**Estratégia prática:**',
+      '- repita a palavra 5 vezes isolada',
+      '- use a palavra em 3 frases simples',
+      '- preste atenção ao ritmo, não só aos sons individuais',
+    ].join('\n')
+  } else if (lower.includes('sentence') || lower.includes('frase') || lower.includes('example')) {
+    explanation += [
+      'Aqui vai um modelo para estudar a estrutura:',
+      '',
+      '**Estrutura:** sujeito + verbo + complemento',
+      '',
+      '**Exemplo simples:**',
+      '- *I use this word at work.*',
+      '- *She used it in a conversation yesterday.*',
+      '- *They are using it correctly now.*',
+      '',
+      'Troque o verbo ou o contexto e crie 3 novas frases suas.',
+    ].join('\n')
+  } else {
+    explanation += [
+      'Posso te ajudar mesmo no modo de contingência com este método:',
+      '1. Identifique a palavra, expressão ou regra principal.',
+      '2. Entenda o significado em português.',
+      '3. Veja uma frase curta em inglês.',
+      '4. Reescreva a frase com informação da sua rotina.',
+      '',
+      '**Exemplo de aplicação:**',
+      '- significado',
+      '- uso em contexto',
+      '- erro comum',
+      '- versão correta',
+    ].join('\n')
+  }
+
+  return [
+    `**Tutor em modo de contingência**`,
+    introByReason[reason],
+    '',
+    explanation,
+    '',
+    '💡 **Dica de estudo:** escreva 3 frases com o que você aprendeu e leia em voz alta para fixar a estrutura.',
+  ].join('\n')
+}
+
+const createModel = (apiKey: string) => {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  return genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction,
+  })
+}
+
+const generateWithRetry = async (input: string, apiKey: string) => {
+  const model = createModel(apiKey)
+  const delays = [0, 400, 1200]
+  let lastError: any = null
+
+  for (const delay of delays) {
+    if (delay > 0) {
+      await sleep(delay)
+    }
+
+    try {
+      const result = await model.generateContent(input)
+      return result.response.text()
+    } catch (error: any) {
+      lastError = error
+      const status = typeof error?.status === 'number' ? error.status : 500
+
+      if (status !== 429 && status < 500) {
+        break
+      }
+    }
+  }
+
+  throw lastError
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -26,40 +138,44 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Input and userId are required.' })
   }
 
+  const prompt = String(input).trim()
+  if (!prompt) {
+    return res.status(400).json({ error: 'Input and userId are required.' })
+  }
+
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return res.status(500).json({
-      error: 'A variável GEMINI_API_KEY não está configurada no Vercel.',
+    return res.status(200).json({
+      response: buildFallbackResponse(prompt, 'missing_key'),
+      fallback: true,
+      providerStatus: 'missing_key',
+      message: 'Fallback tutor used because external AI is not configured.',
     })
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction,
-    })
-
-    const result = await model.generateContent(String(input))
-    const responseText = result.response.text()
+    const responseText = await generateWithRetry(prompt, apiKey)
 
     return res.status(200).json({
       response: responseText,
-      mock: true,
-      message: 'Running without database-backed usage tracking.',
+      fallback: false,
+      providerStatus: 'ok',
+      message: 'External AI response generated successfully.',
     })
   } catch (error: any) {
     const status = typeof error?.status === 'number' ? error.status : 500
+    const reason = status === 429 ? 'rate_limit' : 'unavailable'
 
-    if (status === 429) {
-      return res.status(429).json({
-        error: 'Cota do Google excedida. Tente novamente em breve.',
-      })
-    }
+    console.error('Erro no Tutor IA. Fallback ativado.', {
+      status,
+      message: error?.message,
+    })
 
-    console.error('Erro no Tutor IA:', error)
-    return res.status(500).json({
-      error: 'Erro interno ao processar sua pergunta.',
+    return res.status(200).json({
+      response: buildFallbackResponse(prompt, reason),
+      fallback: true,
+      providerStatus: reason,
+      message: 'Fallback tutor used because external AI was unavailable.',
     })
   }
 }

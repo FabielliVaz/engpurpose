@@ -10,6 +10,7 @@ export default function Chat_AI() {
   const [isLoading, setIsLoading] = useState(false)
   const [limit, setLimit] = useState(5)
   const [error, setError] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
   const [isLocked, setIsLocked] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -67,6 +68,7 @@ export default function Chat_AI() {
     if (!input.trim() || limit <= 0 || isLoading || isLocked) return
 
     setError('')
+    setStatusMessage('')
     const userMessage = input.trim()
     setInput('')
     setIsLocked(true)
@@ -76,6 +78,16 @@ export default function Chat_AI() {
     try {
       const data = await aiService.chat(userMessage, 1)
       setChatHistory(prev => [...prev, { role: 'ai', text: data.response }])
+
+      if (data.fallback) {
+        if (data.providerStatus === 'rate_limit') {
+          setStatusMessage('Tutor em modo de contingência: o provedor principal atingiu limite temporário.')
+        } else if (data.providerStatus === 'missing_key') {
+          setStatusMessage('Tutor em modo de contingência: a IA externa não está configurada neste ambiente.')
+        } else {
+          setStatusMessage('Tutor em modo de contingência: a resposta foi gerada pelo fallback local.')
+        }
+      }
 
       const today = new Date().toDateString()
       const storedUsage = localStorage.getItem(`ai_usage_${today}`)
@@ -170,6 +182,12 @@ export default function Chat_AI() {
             {error && (
               <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-center border border-red-100 font-bold text-sm">
                 {error}
+              </div>
+            )}
+
+            {statusMessage && !error && (
+              <div className="bg-amber-50 text-amber-700 p-4 rounded-2xl text-center border border-amber-100 font-bold text-sm">
+                {statusMessage}
               </div>
             )}
 
