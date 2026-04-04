@@ -50,6 +50,14 @@ export interface AiChatResponse {
   message?: string
 }
 
+export interface AiMessage {
+  id: string
+  role: 'user' | 'ai'
+  text: string
+  translation?: string
+  isTranslating?: boolean
+}
+
 const readMockUsers = (): MockAuthUser[] => {
   if (typeof window === 'undefined') return []
 
@@ -322,11 +330,15 @@ export const aiService = {
     return response.json()
   },
 
-  chat: async (input: string, userId: number): Promise<AiChatResponse> => {
+  chat: async (
+    input: string,
+    userId: number,
+    mode: 'chat' | 'translate' = 'chat'
+  ): Promise<AiChatResponse> => {
     const response = await fetch(`${API_BASE_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input, userId }),
+      body: JSON.stringify({ input, userId, mode }),
     })
 
     const data = await response.json().catch(() => ({}))
@@ -340,5 +352,9 @@ export const aiService = {
     }
 
     return data
+  },
+
+  translate: async (input: string, userId: number): Promise<AiChatResponse> => {
+    return aiService.chat(input, userId, 'translate')
   },
 }

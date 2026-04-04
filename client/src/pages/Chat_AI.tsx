@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { aiService } from '../services/api'
+import { aiService, AiMessage } from '../services/api'
+
+const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 export default function Chat_AI() {
   const [input, setInput] = useState('')
-  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'ai', text: string }[]>([])
+  const [chatHistory, setChatHistory] = useState<AiMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [limit, setLimit] = useState(5)
   const [error, setError] = useState('')
@@ -72,20 +74,20 @@ export default function Chat_AI() {
     const userMessage = input.trim()
     setInput('')
     setIsLocked(true)
-    setChatHistory(prev => [...prev, { role: 'user', text: userMessage }])
+    setChatHistory(prev => [...prev, { id: createMessageId(), role: 'user', text: userMessage }])
     setIsLoading(true)
 
     try {
       const data = await aiService.chat(userMessage, 1)
-      setChatHistory(prev => [...prev, { role: 'ai', text: data.response }])
+      setChatHistory(prev => [...prev, { id: createMessageId(), role: 'ai', text: data.response }])
 
       if (data.fallback) {
         if (data.providerStatus === 'rate_limit') {
-          setStatusMessage('Tutor em modo de contingência: o provedor principal atingiu limite temporário.')
+          setStatusMessage('Tutor in contingency mode: the main provider hit a temporary rate limit.')
         } else if (data.providerStatus === 'missing_key') {
-          setStatusMessage('Tutor em modo de contingência: a IA externa não está configurada neste ambiente.')
+          setStatusMessage('Tutor in contingency mode: the external AI is not configured in this environment.')
         } else {
-          setStatusMessage('Tutor em modo de contingência: a resposta foi gerada pelo fallback local.')
+          setStatusMessage('Tutor in contingency mode: this response came from the local fallback.')
         }
       }
 
@@ -100,22 +102,50 @@ export default function Chat_AI() {
 
       if (status === 429) {
         setCountdown(30)
-        setError('O Google está processando muitas requisições. Aguarde o cronômetro.')
+        setError('The AI provider is busy. Please wait a few seconds and try again.')
         setIsLoading(false)
         return
       }
 
       if (status === 403) {
         setLimit(0)
-        setError('Seu limite diário acabou! Volte amanhã para praticar mais.')
+        setError('Your daily limit is over for now. Please come back tomorrow.')
         setIsLoading(false)
         return
       }
 
-      setError(err instanceof Error ? err.message : 'Ops! Ocorreu um erro ao falar com a IA. Tente novamente.')
+      setError(err instanceof Error ? err.message : 'Something went wrong while contacting the AI tutor.')
       setIsLocked(false)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleTranslate = async (messageId: string, text: string) => {
+    setError('')
+
+    setChatHistory(prev =>
+      prev.map(message =>
+        message.id === messageId ? { ...message, isTranslating: true } : message
+      )
+    )
+
+    try {
+      const data = await aiService.translate(text, 1)
+      setChatHistory(prev =>
+        prev.map(message =>
+          message.id === messageId
+            ? { ...message, translation: data.response, isTranslating: false }
+            : message
+        )
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not translate this block right now.')
+      setChatHistory(prev =>
+        prev.map(message =>
+          message.id === messageId ? { ...message, isTranslating: false } : message
+        )
+      )
     }
   }
 
@@ -127,7 +157,7 @@ export default function Chat_AI() {
             <span>←</span> Voltar
           </Link>
           <h1 className="text-3xl font-black tracking-tight">English AI Tutor</h1>
-          <p className="opacity-90 text-sm font-medium">Foco em vocabulário e gramática</p>
+          <p className="opacity-90 text-sm font-medium">Practice in English and translate each reply when needed</p>
         </div>
       </header>
 
@@ -137,11 +167,11 @@ export default function Chat_AI() {
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full animate-pulse ${isLocked ? 'bg-amber-500' : 'bg-green-500'}`}></span>
               <span className="text-slate-500 font-bold text-xs uppercase tracking-widest">
-                {isLocked ? 'Aguardando...' : 'IA Online'}
+                {isLocked ? 'Waiting...' : 'Tutor Online'}
               </span>
             </div>
             <span className={`px-4 py-1 rounded-full text-[10px] font-black tracking-wider transition-colors ${limit > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-              {limit > 0 ? `${limit} PERGUNTAS RESTANTES` : 'LIMITE ESGOTADO'}
+              {limit > 0 ? `${limit} REQUESTS LEFT` : 'LIMIT REACHED'}
             </span>
           </div>
 
@@ -153,17 +183,36 @@ export default function Chat_AI() {
               </div>
             )}
 
-            {chatHistory.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                <div className={`max-w-[90%] p-5 rounded-[2rem] shadow-sm text-lg leading-relaxed ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-indigo-50 border border-indigo-100 text-slate-800 rounded-tl-none font-medium'}`}>
-                  {msg.role === 'ai' ? (
-                    <article className="prose prose-indigo prose-sm sm:prose-base max-w-none prose-table:border prose-table:rounded-xl">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.text}
-                      </ReactMarkdown>
-                    </article>
+            {chatHistory.map(message => (
+              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                <div className={`max-w-[90%] p-5 rounded-[2rem] shadow-sm text-lg leading-relaxed ${message.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-indigo-50 border border-indigo-100 text-slate-800 rounded-tl-none font-medium'}`}>
+                  {message.role === 'ai' ? (
+                    <>
+                      <article className="prose prose-indigo prose-sm sm:prose-base max-w-none prose-table:border prose-table:rounded-xl">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.text}
+                        </ReactMarkdown>
+                      </article>
+                      <div className="mt-4 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleTranslate(message.id, message.text)}
+                          disabled={message.isTranslating}
+                          className="rounded-full border border-indigo-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+                        >
+                          {message.isTranslating ? 'Translating...' : 'Translate'}
+                        </button>
+                      </div>
+                      {message.translation && (
+                        <article className="prose prose-slate prose-sm sm:prose-base mt-4 max-w-none rounded-2xl border border-slate-200 bg-white/70 p-4">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.translation}
+                          </ReactMarkdown>
+                        </article>
+                      )}
+                    </>
                   ) : (
-                    msg.text
+                    message.text
                   )}
                 </div>
               </div>
@@ -202,7 +251,7 @@ export default function Chat_AI() {
                   value={input}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
                   disabled={limit <= 0 || isLoading || isLocked}
-                  placeholder={isLocked ? `Aguarde ${countdown}s...` : limit > 0 ? 'Ask me anything about English...' : 'Volte amanhã!'}
+                  placeholder={isLocked ? `Wait ${countdown}s...` : limit > 0 ? 'Ask in Portuguese or English. The tutor will answer in English.' : 'Come back tomorrow!'}
                   className="w-full bg-slate-100 border-2 border-transparent focus:border-indigo-400 focus:bg-white rounded-2xl px-6 py-4 outline-none font-medium transition-all text-slate-700 disabled:opacity-50"
                 />
                 {isLocked && countdown > 0 && (
@@ -216,7 +265,7 @@ export default function Chat_AI() {
                 disabled={limit <= 0 || isLoading || isLocked || !input.trim()}
                 className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white px-8 rounded-2xl font-black transition-all shadow-lg active:scale-95 flex items-center justify-center min-w-[120px]"
               >
-                {isLoading ? '...' : isLocked && countdown > 0 ? `${countdown}s` : 'ENVIAR'}
+                {isLoading ? '...' : isLocked && countdown > 0 ? `${countdown}s` : 'SEND'}
               </button>
             </form>
           </div>

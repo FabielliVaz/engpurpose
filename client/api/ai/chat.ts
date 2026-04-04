@@ -1,98 +1,124 @@
 // import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const systemInstruction = `Você é um Tutor de Inglês especialista, focado em ajudar estudantes brasileiros a aprenderem inglês de forma prática e envolvente.
+const systemInstruction = `You are an English tutor focused on helping Brazilian learners improve practical communication.
 
-REGRAS IMPORTANTES:
-1. Sempre responda em português brasileiro.
-2. Use markdown para formatar suas respostas.
-3. Seja claro, paciente e objetivo.
-4. Foque em vocabulário, gramática e pronúncia prática.
-5. Use exemplos do dia a dia quando útil.
-6. Corrija erros gentilmente e explique o porquê.
-7. Mantenha respostas concisas, mas completas.
+IMPORTANT RULES:
+1. Always answer in English by default.
+2. Use markdown formatting when useful.
+3. Be clear, patient, and concise.
+4. Focus on vocabulary, grammar, pronunciation, and natural phrasing.
+5. Use practical day-to-day examples.
+6. Correct mistakes gently and explain why.
+7. Keep responses short but complete.
 
-SEMPRE TERMINE SUAS RESPOSTAS COM:
-💡 **Dica de estudo:** [uma dica prática para praticar o que foi ensinado]`
+ALWAYS END YOUR RESPONSE WITH:
+💡 **Study tip:** [one practical exercise the student can do right now]`
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-const buildFallbackResponse = (input: string, reason: 'rate_limit' | 'unavailable' | 'missing_key') => {
+const buildFallbackResponse = (
+  input: string,
+  reason: 'rate_limit' | 'unavailable' | 'missing_key',
+  mode: 'chat' | 'translate'
+) => {
   const normalized = input.trim()
   const lower = normalized.toLowerCase()
 
-  const introByReason = {
-    rate_limit: 'O tutor avançado está temporariamente sobrecarregado, então respondi com o modo de contingência.',
-    unavailable: 'O provedor de IA está indisponível no momento, então respondi com o modo de contingência.',
-    missing_key: 'A integração externa não está configurada neste ambiente, então respondi com o modo de contingência.',
+  if (mode === 'translate') {
+    return [
+      '**Translation mode fallback**',
+      reason === 'missing_key'
+        ? 'The external translator is not configured in this environment.'
+        : 'The external translator is temporarily unavailable, so I could not translate this block automatically.',
+      '',
+      '**Original block:**',
+      normalized,
+      '',
+      '💡 **Study tip:** translate one sentence by yourself first, then compare it with an automated translation later.',
+    ].join('\n')
   }
 
-  let explanation = `Você perguntou: **${normalized}**\n\n`
+  const introByReason = {
+    rate_limit: 'The advanced tutor is temporarily overloaded, so I answered in contingency mode.',
+    unavailable: 'The AI provider is temporarily unavailable, so I answered in contingency mode.',
+    missing_key: 'The external AI integration is not configured in this environment, so I answered in contingency mode.',
+  }
+
+  let explanation = `You asked: **${normalized}**\n\n`
 
   if (lower.includes('difference between') || lower.includes('diferença') || lower.includes('qual a diferença')) {
     explanation += [
-      'Para comparar duas palavras ou estruturas em inglês, use este roteiro:',
-      '1. Veja o significado principal de cada uma.',
-      '2. Observe o contexto em que cada opção aparece.',
-      '3. Monte uma frase curta com cada termo.',
-      '4. Compare o tom: formal, informal, frequente ou específico.',
+      'To compare two English words or structures, use this approach:',
+      '1. Identify the main meaning of each one.',
+      '2. Check the context where each option appears.',
+      '3. Write one short sentence with each term.',
+      '4. Compare the tone: formal, informal, frequent, or specific.',
       '',
-      '**Exemplo de estudo:**',
-      '- Palavra A: use quando quiser falar de sentido mais geral.',
-      '- Palavra B: use quando quiser um contexto mais específico.',
+      '**Study example:**',
+      '- Word A: use it for a broader meaning.',
+      '- Word B: use it for a more specific context.',
     ].join('\n')
   } else if (lower.includes('pronunciation') || lower.includes('pronúncia') || lower.includes('how do i say')) {
     explanation += [
-      'Para praticar pronúncia em inglês:',
-      '1. Separe a palavra em partes.',
-      '2. Descubra qual sílaba recebe mais força.',
-      '3. Fale devagar primeiro, depois em velocidade normal.',
-      '4. Grave sua voz e compare com uma referência.',
+      'To practice pronunciation in English:',
+      '1. Break the word into parts.',
+      '2. Identify the stressed syllable.',
+      '3. Say it slowly first, then at normal speed.',
+      '4. Record yourself and compare with a reference.',
       '',
-      '**Estratégia prática:**',
-      '- repita a palavra 5 vezes isolada',
-      '- use a palavra em 3 frases simples',
-      '- preste atenção ao ritmo, não só aos sons individuais',
+      '**Practical strategy:**',
+      '- repeat the word 5 times in isolation',
+      '- use the word in 3 simple sentences',
+      '- pay attention to rhythm, not only to individual sounds',
     ].join('\n')
   } else if (lower.includes('sentence') || lower.includes('frase') || lower.includes('example')) {
     explanation += [
-      'Aqui vai um modelo para estudar a estrutura:',
+      'Here is a simple pattern you can study:',
       '',
-      '**Estrutura:** sujeito + verbo + complemento',
+      '**Structure:** subject + verb + complement',
       '',
-      '**Exemplo simples:**',
+      '**Simple example:**',
       '- *I use this word at work.*',
       '- *She used it in a conversation yesterday.*',
       '- *They are using it correctly now.*',
       '',
-      'Troque o verbo ou o contexto e crie 3 novas frases suas.',
+      'Change the verb or context and create 3 new sentences of your own.',
     ].join('\n')
   } else {
     explanation += [
-      'Posso te ajudar mesmo no modo de contingência com este método:',
-      '1. Identifique a palavra, expressão ou regra principal.',
-      '2. Entenda o significado em português.',
-      '3. Veja uma frase curta em inglês.',
-      '4. Reescreva a frase com informação da sua rotina.',
+      'I can still help you in contingency mode with this method:',
+      '1. Identify the key word, expression, or rule.',
+      '2. Understand the meaning clearly.',
+      '3. Look at one short example in English.',
+      '4. Rewrite the example using your own routine or context.',
       '',
-      '**Exemplo de aplicação:**',
-      '- significado',
-      '- uso em contexto',
-      '- erro comum',
-      '- versão correta',
+      '**Study checklist:**',
+      '- meaning',
+      '- use in context',
+      '- common mistake',
+      '- correct version',
     ].join('\n')
   }
 
   return [
-    '**Tutor em modo de contingência**',
+    '**Tutor in contingency mode**',
     introByReason[reason],
     '',
     explanation,
     '',
-    '💡 **Dica de estudo:** escreva 3 frases com o que você aprendeu e leia em voz alta para fixar a estrutura.',
+    '💡 **Study tip:** write 3 sentences with what you learned and read them aloud to reinforce the structure.',
   ].join('\n')
 }
 
-const createGroqRequest = async (input: string, apiKey: string) => {
+const buildUserPrompt = (input: string, mode: 'chat' | 'translate') => {
+  if (mode === 'translate') {
+    return `Translate the following markdown block into Brazilian Portuguese. Preserve the markdown structure and keep the translation natural.\n\n${input}`
+  }
+
+  return input
+}
+
+const createGroqRequest = async (input: string, apiKey: string, mode: 'chat' | 'translate') => {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -101,10 +127,10 @@ const createGroqRequest = async (input: string, apiKey: string) => {
     },
     body: JSON.stringify({
       model: 'llama-3.1-8b-instant',
-      temperature: 0.4,
+      temperature: mode === 'translate' ? 0.2 : 0.4,
       messages: [
         { role: 'system', content: systemInstruction },
-        { role: 'user', content: input },
+        { role: 'user', content: buildUserPrompt(input, mode) },
       ],
     }),
   })
@@ -120,7 +146,7 @@ const createGroqRequest = async (input: string, apiKey: string) => {
   return data?.choices?.[0]?.message?.content as string | undefined
 }
 
-const generateWithRetry = async (input: string, apiKey: string) => {
+const generateWithRetry = async (input: string, apiKey: string, mode: 'chat' | 'translate') => {
   const delays = [0, 500, 1500]
   let lastError: any = null
 
@@ -130,7 +156,7 @@ const generateWithRetry = async (input: string, apiKey: string) => {
     }
 
     try {
-      const content = await createGroqRequest(input, apiKey)
+      const content = await createGroqRequest(input, apiKey, mode)
       if (!content) {
         throw new Error('Groq returned an empty response')
       }
@@ -154,7 +180,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { input, userId } = req.body ?? {}
+  const { input, userId, mode = 'chat' } = req.body ?? {}
 
   if (!input || !userId) {
     return res.status(400).json({ error: 'Input and userId are required.' })
@@ -165,10 +191,12 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Input and userId are required.' })
   }
 
+  const requestMode = mode === 'translate' ? 'translate' : 'chat'
   const apiKey = process.env.GROQ_API_KEY
+
   if (!apiKey) {
     return res.status(200).json({
-      response: buildFallbackResponse(prompt, 'missing_key'),
+      response: buildFallbackResponse(prompt, 'missing_key', requestMode),
       fallback: true,
       providerStatus: 'missing_key',
       message: 'Fallback tutor used because external AI is not configured.',
@@ -176,7 +204,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const responseText = await generateWithRetry(prompt, apiKey)
+    const responseText = await generateWithRetry(prompt, apiKey, requestMode)
 
     return res.status(200).json({
       response: responseText,
@@ -192,10 +220,11 @@ export default async function handler(req: any, res: any) {
       provider: 'groq',
       status,
       message: error?.message,
+      mode: requestMode,
     })
 
     return res.status(200).json({
-      response: buildFallbackResponse(prompt, reason),
+      response: buildFallbackResponse(prompt, reason, requestMode),
       fallback: true,
       providerStatus: reason,
       message: 'Fallback tutor used because external AI was unavailable.',
