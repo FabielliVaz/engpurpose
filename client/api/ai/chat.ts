@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const systemInstruction = `Você é um Tutor de Inglês especialista, focado em ajudar estudantes brasileiros a aprenderem inglês de forma prática e envolvente.
 
@@ -83,7 +83,7 @@ const buildFallbackResponse = (input: string, reason: 'rate_limit' | 'unavailabl
   }
 
   return [
-    `**Tutor em modo de contingência**`,
+    '**Tutor em modo de contingência**',
     introByReason[reason],
     '',
     explanation,
@@ -92,17 +92,36 @@ const buildFallbackResponse = (input: string, reason: 'rate_limit' | 'unavailabl
   ].join('\n')
 }
 
-const createModel = (apiKey: string) => {
-  const genAI = new GoogleGenerativeAI(apiKey)
-  return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction,
+const createGroqRequest = async (input: string, apiKey: string) => {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.4,
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: input },
+      ],
+    }),
   })
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    const error = new Error(errorBody || 'Groq request failed') as Error & { status?: number }
+    error.status = response.status
+    throw error
+  }
+
+  const data = await response.json()
+  return data?.choices?.[0]?.message?.content as string | undefined
 }
 
 const generateWithRetry = async (input: string, apiKey: string) => {
-  const model = createModel(apiKey)
-  const delays = [0, 400, 1200]
+  const delays = [0, 500, 1500]
   let lastError: any = null
 
   for (const delay of delays) {
@@ -111,8 +130,11 @@ const generateWithRetry = async (input: string, apiKey: string) => {
     }
 
     try {
-      const result = await model.generateContent(input)
-      return result.response.text()
+      const content = await createGroqRequest(input, apiKey)
+      if (!content) {
+        throw new Error('Groq returned an empty response')
+      }
+      return content
     } catch (error: any) {
       lastError = error
       const status = typeof error?.status === 'number' ? error.status : 500
@@ -143,7 +165,7 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Input and userId are required.' })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return res.status(200).json({
       response: buildFallbackResponse(prompt, 'missing_key'),
@@ -167,6 +189,7 @@ export default async function handler(req: any, res: any) {
     const reason = status === 429 ? 'rate_limit' : 'unavailable'
 
     console.error('Erro no Tutor IA. Fallback ativado.', {
+      provider: 'groq',
       status,
       message: error?.message,
     })
@@ -179,3 +202,23 @@ export default async function handler(req: any, res: any) {
     })
   }
 }
+
+/*
+Fallback rápido para Gemini, caso precisemos voltar:
+
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const createGeminiModel = (apiKey: string) => {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  return genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction,
+  })
+}
+
+const generateWithGemini = async (input: string, apiKey: string) => {
+  const model = createGeminiModel(apiKey)
+  const result = await model.generateContent(input)
+  return result.response.text()
+}
+*/
