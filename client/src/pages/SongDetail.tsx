@@ -142,8 +142,15 @@ export default function SongDetail() {
               <p className="text-slate-400 mt-2 font-medium">Clique na frase para ver a tradução</p>
             </div>
             <div className="flex gap-4">
-              <Link to="/tutor-ia" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-8 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2">
-                <span>Tutor IA</span>
+              <Link
+                to="/tutor-ia"
+                state={{
+                  contextLabel: `${song?.title} by ${song?.artist}`,
+                  initialPrompt: `Please help me study the song "${song?.title}" by ${song?.artist}. Focus on vocabulary, useful expressions, grammar patterns, and pronunciation tips. Here is an excerpt of the lyrics:\n\n${song?.lyrics?.split('\n').slice(0, 8).join('\n')}`,
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-8 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2"
+              >
+                <span>Study With AI</span>
               </Link>
               <button onClick={() => setShowQuiz(true)} className="bg-amber-400 hover:bg-amber-500 text-black font-black py-4 px-10 rounded-2xl shadow-xl transition-all active:scale-95">
                 Quiz

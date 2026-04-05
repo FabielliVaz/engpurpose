@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { aiService, AiMessage } from '../services/api'
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
+type TutorLocationState = {
+  initialPrompt?: string
+  contextLabel?: string
+}
+
 export default function Chat_AI() {
+  const location = useLocation()
+  const navigationState = (location.state as TutorLocationState | null) ?? null
   const [input, setInput] = useState('')
   const [chatHistory, setChatHistory] = useState<AiMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -16,6 +23,12 @@ export default function Chat_AI() {
   const [isLocked, setIsLocked] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (navigationState?.initialPrompt) {
+      setInput(current => current || navigationState.initialPrompt || '')
+    }
+  }, [navigationState?.initialPrompt])
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined
@@ -158,6 +171,11 @@ export default function Chat_AI() {
           </Link>
           <h1 className="text-3xl font-black tracking-tight">English AI Tutor</h1>
           <p className="opacity-90 text-sm font-medium">Practice in English and translate each reply when needed</p>
+          {navigationState?.contextLabel && (
+            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-100">
+              Context: {navigationState.contextLabel}
+            </p>
+          )}
         </div>
       </header>
 
@@ -251,7 +269,7 @@ export default function Chat_AI() {
                   value={input}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
                   disabled={limit <= 0 || isLoading || isLocked}
-                  placeholder={isLocked ? `Wait ${countdown}s...` : limit > 0 ? 'Ask in Portuguese or English. The tutor will answer in English.' : 'Come back tomorrow!'}
+                  placeholder={isLocked ? `Wait ${countdown}s...` : limit > 0 ? 'Ask about this song, vocabulary, grammar, or pronunciation.' : 'Come back tomorrow!'}
                   className="w-full bg-slate-100 border-2 border-transparent focus:border-indigo-400 focus:bg-white rounded-2xl px-6 py-4 outline-none font-medium transition-all text-slate-700 disabled:opacity-50"
                 />
                 {isLocked && countdown > 0 && (
