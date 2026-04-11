@@ -44,6 +44,9 @@ export default function SongDetail() {
           const wordsNotInLyrics = possibleWords.filter(word => !foundSong.lyrics.toLowerCase().includes(word.toLowerCase()))
           const correctWord = wordsNotInLyrics.length > 0 ? wordsNotInLyrics[Math.floor(Math.random() * wordsNotInLyrics.length)] : 'Love'
           const otherOptions = possibleWords.filter(word => word !== correctWord).slice(0, 2)
+          const genreOptions = ['Rock', 'Jazz', 'Hip-Hop', 'Classical']
+            .filter(option => option !== (foundSong.genre || 'Pop'))
+            .slice(0, 2)
 
           setQuizzes([
             {
@@ -63,7 +66,7 @@ export default function SongDetail() {
             },
             {
               question: 'What is the genre of this song?',
-              options: shuffle([foundSong.genre || 'Pop', 'Rock', 'Pop']),
+              options: shuffle([foundSong.genre || 'Pop', ...genreOptions]),
               correctAnswer: foundSong.genre || 'Pop',
             },
             {

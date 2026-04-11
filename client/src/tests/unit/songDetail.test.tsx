@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { shuffle } from '../../utils'
 
-// Mock song data
 const mockSong = {
   id: 4,
   title: 'Yellow',
@@ -12,12 +11,15 @@ const mockSong = {
   lyrics: 'Look at the stars, look how they shine for you'
 }
 
-// Function to generate quiz (extracted from component for testing)
 function generateQuiz(song: typeof mockSong) {
   const possibleWords = ['Love', 'Dance', 'Sky', 'Run', 'Fly'];
   const wordsNotInLyrics = possibleWords.filter(word => !song.lyrics.toLowerCase().includes(word.toLowerCase()));
   const correctWord = wordsNotInLyrics.length > 0 ? wordsNotInLyrics[Math.floor(Math.random() * wordsNotInLyrics.length)] : 'Love';
   const otherOptions = possibleWords.filter(word => word !== correctWord).slice(0, 2);
+
+  const genreOptions = ['Rock', 'Pop', 'Jazz', 'Hip-Hop', 'Classical']
+    .filter(option => option !== song.genre)
+    .slice(0, 2);
 
   return [
     {
@@ -37,7 +39,7 @@ function generateQuiz(song: typeof mockSong) {
     },
     {
       question: 'What is the genre of this song?',
-      options: shuffle([song.genre, 'Rock', 'Pop']),
+      options: shuffle([song.genre, ...genreOptions]),
       correctAnswer: song.genre
     },
     {
